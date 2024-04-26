@@ -1,5 +1,11 @@
 import playerID as pID
 import LeagueStat as ls
+import pandas as pd
+
+pd.options.display.width = None
+pd.options.display.max_columns = None
+pd.set_option('display.max_rows', 5000)
+pd.set_option('display.max_columns', 5000)
 
 player_id = pID.playerID
 stat_name = ls.stat_name
@@ -7,29 +13,20 @@ stat_name_list = []
 exp_stat_name_list = []
 stat_mean_list = []
 graph_label_list = []
-#All this variables are going to be passed to basketball.py
 
-#All the data used was obtained from the nba_api package
-#To access the player data on the API, we use his player ID
-from nba_api.stats.endpoints import playergamelog
-#Creating a dataframe from last season in order to obtain the main values required to start the
-#simulation
-gamelog_player_2022 = playergamelog.PlayerGameLog(player_id=str(player_id), season='2022')
-gamelog_player_2022_df = gamelog_player_2022.get_data_frames()[0]
+active_players_data = pd.read_csv('active_nba_players_data.csv')
+player_gamelog = active_players_data[active_players_data['Player_ID'] == player_id]
+
+gamelog_player_2022_df = player_gamelog[player_gamelog['SEASON_ID'] == 22022]
+gamelog_player_2022_df = gamelog_player_2022_df.drop(columns=['index']).reset_index()
 gamelog_player_2022_df['FG2M'] = gamelog_player_2022_df['FGM'] - gamelog_player_2022_df['FG3M']
-
-#Creating the current season dataframe
-gamelog_player_2023 = playergamelog.PlayerGameLog(player_id=str(player_id), season='2023')
-gamelog_player_2023_df = gamelog_player_2023.get_data_frames()[0].iloc[::-1].reset_index()
-gamelog_player_2023_df = gamelog_player_2023_df.drop(columns=['index'])
-gamelog_player_2023_df['FG2M'] = gamelog_player_2023_df['FGM'] - gamelog_player_2023_df['FG3M']
-
-#For my simulation formula I will be using the average minutes from the previous season
 minutes_mean_2022 = round(gamelog_player_2022_df['MIN'].mean())
-#minutes_mean_2023 = round(gamelog_player_2023_df['MIN'].mean())
 
-#We create a mean value as well as the labels we are going to use according to the
-#stats you put on stat_name
+gamelog_player_2023_df = player_gamelog[player_gamelog['SEASON_ID'] == 22023]
+gamelog_player_2023_df = gamelog_player_2023_df.drop(columns=['index'], axis=1).reset_index()
+gamelog_player_2023_df['FG2M'] = gamelog_player_2023_df['FGM'] - gamelog_player_2023_df['FG3M']
+gamelog_player_2023_df = gamelog_player_2023_df.iloc[:,1:]
+
 for st in stat_name:
     stat = ls.leagueStats.get(st)
     expected_stat = ls.expectedStats.get(st)
@@ -39,10 +36,3 @@ for st in stat_name:
     exp_stat_name_list.append(expected_stat)
     stat_mean_list.append(stat_mean_2022)
     graph_label_list.append(graph_label)
-
-'''
-print(stat_name_list)
-print(exp_stat_name_list)
-print(stat_mean_list)
-print(graph_label_list)
-'''
